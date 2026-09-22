@@ -1,0 +1,25 @@
+// Импортируем Router из Express.
+const express = require("express");
+// Импортируем контроллер комментариев.
+const commentController = require("../controllers/commentController");
+// Импортируем middleware проверки JWT-токена.
+const authMiddleware = require("../middlewares/authMiddleware");
+// Импортируем middleware проверки ролей (RBAC).
+const rbacMiddleware = require("../middlewares/rbacMiddleware");
+const { validateBody } = require("../middlewares/validateMiddleware");
+const { commentCreateSchema } = require("../validators/schemas");
+
+// Создаём экземпляр роутера для маршрутов комментариев.
+const router = express.Router();
+
+// GET    /api/comments/room/:roomId — получение комментариев к комнате.
+router.get("/room/:roomId", authMiddleware, commentController.getByRoom);
+// POST   /api/comments/room/:roomId — создание комментария к комнате.
+// Viewer (read-only) не может писать — только user и admin.
+router.post("/room/:roomId", authMiddleware, rbacMiddleware(["user", "admin"]),
+  validateBody(commentCreateSchema), commentController.create);
+// DELETE /api/comments/:id — удаление комментария (только админ).
+router.delete("/:id", authMiddleware, rbacMiddleware(["admin"]), commentController.remove);
+
+// Экспортируем роутер комментариев.
+module.exports = router;
